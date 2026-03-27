@@ -19,7 +19,7 @@ export default function Modal({ title, onClose, children }: Props) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden max-h-[90vh] flex flex-col"
+        className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-2 sm:mx-4 overflow-hidden max-h-[92dvh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">

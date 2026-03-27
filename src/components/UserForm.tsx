@@ -127,7 +127,7 @@ export default function UserForm({ initial, onSubmit, onCancel }: Props) {
 
       {/* ── User Information ─────────────────────────────── */}
       <Section title="User Information">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <InputField label="Full Name" error={errors.name}>
             <input
               type="text"
@@ -151,7 +151,7 @@ export default function UserForm({ initial, onSubmit, onCancel }: Props) {
 
       {/* ── Role ─────────────────────────────────────────── */}
       <Section title="Role">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {ROLE_OPTIONS.map(opt => {
             const active = form.role === opt.value
             return (
@@ -184,7 +184,7 @@ export default function UserForm({ initial, onSubmit, onCancel }: Props) {
 
       {/* ── Status & Activity ────────────────────────────── */}
       <Section title="Status & Activity">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Status toggle */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Account Status</label>
@@ -223,7 +223,7 @@ export default function UserForm({ initial, onSubmit, onCancel }: Props) {
 
       {/* ── Groups & Permissions ─────────────────────────── */}
       <Section title="Groups & Permissions">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {ALL_GROUPS.map(g => {
             const checked = form.groups.includes(g)
             return (
@@ -269,11 +269,11 @@ export default function UserForm({ initial, onSubmit, onCancel }: Props) {
       </Section>
 
       {/* ── Divider + Actions ────────────────────────────── */}
-      <div className="border-t border-gray-100 pt-4 flex items-center justify-between gap-3">
-        <p className="text-xs text-gray-400">
+      <div className="border-t border-gray-100 pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <p className="text-xs text-gray-400 order-2 sm:order-1">
           {initial ? `Editing user · ID ${initial.id}` : 'All fields marked are required'}
         </p>
-        <div className="flex gap-2">
+        <div className="flex gap-2 order-1 sm:order-2">
           <button
             type="button"
             onClick={onCancel}

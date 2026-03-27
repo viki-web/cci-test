@@ -29,8 +29,18 @@ const activityDot: Record<ActivityLevel, string> = {
   Inactive: 'bg-gray-300',
 }
 
-const TH = ({ children, right }: { children?: React.ReactNode; right?: boolean }) => (
-  <th className={`px-4 py-3 font-medium text-gray-500 uppercase tracking-wide text-xs whitespace-nowrap ${right ? 'text-right' : ''}`}>
+// Shared header cell — accepts optional hide class
+const TH = ({
+  children,
+  right,
+  className = '',
+}: {
+  children?: React.ReactNode
+  right?: boolean
+  className?: string
+}) => (
+  <th className={`px-4 py-3 font-medium text-gray-500 uppercase tracking-wide text-xs whitespace-nowrap
+    ${right ? 'text-right' : ''} ${className}`}>
     {children}
   </th>
 )
@@ -58,14 +68,16 @@ export default function UserTable({ users, onEdit, onDelete }: Props) {
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-gray-50 border-b border-gray-200 text-left">
-            <TH></TH>
+            {/* Always visible */}
+            <TH />
             <TH>Name</TH>
-            <TH>Email</TH>
             <TH>Role</TH>
             <TH>Status</TH>
-            <TH>Last Login</TH>
-            <TH>Activity</TH>
-            <TH>Groups / Permissions</TH>
+            {/* Hidden on mobile */}
+            <TH className="hidden md:table-cell">Email</TH>
+            <TH className="hidden lg:table-cell">Last Login</TH>
+            <TH className="hidden lg:table-cell">Activity</TH>
+            <TH className="hidden xl:table-cell">Groups / Permissions</TH>
             <TH right>Actions</TH>
           </tr>
         </thead>
@@ -76,31 +88,34 @@ export default function UserTable({ users, onEdit, onDelete }: Props) {
               <>
                 <tr
                   key={user.id}
-                  className={`border-b border-gray-100 transition-colors cursor-pointer ${expanded ? 'bg-indigo-50' : 'bg-white hover:bg-gray-50'}`}
+                  className={`border-b border-gray-100 transition-colors cursor-pointer
+                    ${expanded ? 'bg-indigo-50' : 'bg-white hover:bg-gray-50'}`}
                   onClick={() => toggleExpand(user.id)}
                 >
                   {/* Expand chevron */}
                   <td className="pl-4 pr-2 py-3 w-8">
                     <svg
-                      className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${expanded ? 'rotate-90 text-indigo-500' : ''}`}
+                      className={`w-4 h-4 text-gray-400 transition-transform duration-200
+                        ${expanded ? 'rotate-90 text-indigo-500' : ''}`}
                       fill="none" viewBox="0 0 24 24" stroke="currentColor"
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </td>
 
-                  {/* Name */}
+                  {/* Name — on mobile also shows email beneath */}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-semibold text-xs shrink-0">
                         {user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
-                      <span className="font-medium text-gray-800 whitespace-nowrap">{user.name}</span>
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-800 whitespace-nowrap">{user.name}</p>
+                        {/* Email visible only when the Email column is hidden */}
+                        <p className="text-xs text-gray-400 truncate md:hidden">{user.email}</p>
+                      </div>
                     </div>
                   </td>
-
-                  {/* Email */}
-                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{user.email}</td>
 
                   {/* Role */}
                   <td className="px-4 py-3">
@@ -114,19 +129,26 @@ export default function UserTable({ users, onEdit, onDelete }: Props) {
                     <StatusBadge status={user.status} />
                   </td>
 
-                  {/* Last Login */}
-                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{user.lastLogin}</td>
+                  {/* Email — hidden on mobile */}
+                  <td className="hidden md:table-cell px-4 py-3 text-gray-500 whitespace-nowrap">
+                    {user.email}
+                  </td>
 
-                  {/* Activity Level */}
-                  <td className="px-4 py-3">
+                  {/* Last Login — hidden below lg */}
+                  <td className="hidden lg:table-cell px-4 py-3 text-gray-500 whitespace-nowrap">
+                    {user.lastLogin}
+                  </td>
+
+                  {/* Activity — hidden below lg */}
+                  <td className="hidden lg:table-cell px-4 py-3">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${activityStyle[user.activityLevel]}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${activityDot[user.activityLevel]}`} />
                       {user.activityLevel}
                     </span>
                   </td>
 
-                  {/* Groups */}
-                  <td className="px-4 py-3">
+                  {/* Groups — hidden below xl */}
+                  <td className="hidden xl:table-cell px-4 py-3">
                     <div className="flex flex-wrap gap-1 max-w-48">
                       {user.groups.map(g => (
                         <span key={g} className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-md font-medium whitespace-nowrap">
