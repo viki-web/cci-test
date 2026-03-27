@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import type { User, Role, ActivityLevel } from '../types/user'
 import StatusBadge from './StatusBadge'
 import UserDetailPanel from './UserDetailPanel'
@@ -85,16 +85,16 @@ export default function UserTable({ users, onEdit, onDelete }: Props) {
           {users.map(user => {
             const expanded = expandedId === user.id
             return (
-              <>
+              <Fragment key={user.id}>
                 <tr
-                  key={user.id}
                   className={`border-b border-gray-100 transition-colors cursor-pointer
                     ${expanded ? 'bg-indigo-50' : 'bg-white hover:bg-gray-50'}`}
                   onClick={() => toggleExpand(user.id)}
                 >
                   {/* Expand chevron */}
-                  <td className="pl-4 pr-2 py-3 w-8">
+                  <td className="pl-4 pr-2 py-3 w-8" aria-label={expanded ? 'Collapse details' : 'Expand details'}>
                     <svg
+                      aria-hidden="true"
                       className={`w-4 h-4 text-gray-400 transition-transform duration-200
                         ${expanded ? 'rotate-90 text-indigo-500' : ''}`}
                       fill="none" viewBox="0 0 24 24" stroke="currentColor"
@@ -164,7 +164,7 @@ export default function UserTable({ users, onEdit, onDelete }: Props) {
                       <button
                         onClick={() => onEdit(user)}
                         className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition"
-                        title="Edit user"
+                        aria-label={`Edit ${user.name}`}
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -174,7 +174,7 @@ export default function UserTable({ users, onEdit, onDelete }: Props) {
                       <button
                         onClick={() => onDelete(user.id)}
                         className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition"
-                        title="Delete user"
+                        aria-label={`Delete ${user.name}`}
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -187,13 +187,13 @@ export default function UserTable({ users, onEdit, onDelete }: Props) {
 
                 {/* Detail Panel */}
                 {expanded && (
-                  <tr key={`${user.id}-detail`} className="border-b border-gray-100">
+                  <tr className="border-b border-gray-100">
                     <td colSpan={9} className="p-0">
                       <UserDetailPanel user={user} />
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             )
           })}
         </tbody>

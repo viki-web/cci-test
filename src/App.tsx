@@ -1,9 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import type { User, UserFormData, Role, Status } from './types/user'
 import { mockUsers } from './data/mockUsers'
 import UserTable from './components/UserTable'
 import UserForm from './components/UserForm'
 import Modal from './components/Modal'
+import ConfirmDialog from './components/ConfirmDialog'
+import { ToastContainer, useToast } from './components/Toast'
 
 type FilterRole = Role | 'All'
 type FilterStatus = Status | 'All'
@@ -19,6 +21,9 @@ export default function App() {
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('All')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<User | null>(null)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+
+  const { toasts, toast, dismiss } = useToast()
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
@@ -30,26 +35,39 @@ export default function App() {
     })
   }, [users, search, roleFilter, statusFilter])
 
-  const openAdd = () => { setEditing(null); setModalOpen(true) }
-  const openEdit = (user: User) => { setEditing(user); setModalOpen(true) }
-  const closeModal = () => { setModalOpen(false); setEditing(null) }
+  const openAdd = useCallback(() => { setEditing(null); setModalOpen(true) }, [])
+  const openEdit = useCallback((user: User) => { setEditing(user); setModalOpen(true) }, [])
+  const closeModal = useCallback(() => { setModalOpen(false); setEditing(null) }, [])
 
-  const handleSubmit = (data: UserFormData) => {
+  const handleSubmit = useCallback((data: UserFormData) => {
     if (editing) {
       setUsers(prev => prev.map(u => u.id === editing.id ? { ...u, ...data } : u))
+      toast(`${data.name} updated successfully.`, 'success')
     } else {
       const newUser: User = { ...data, id: generateId(), createdAt: new Date().toISOString().slice(0, 10) }
       setUsers(prev => [newUser, ...prev])
+      toast(`${data.name} added successfully.`, 'success')
     }
     closeModal()
-  }
+  }, [editing, closeModal, toast])
 
-  const handleDelete = (id: string) => {
-    setUsers(prev => prev.filter(u => u.id !== id))
-  }
+  const handleDeleteRequest = useCallback((id: string) => {
+    setPendingDeleteId(id)
+  }, [])
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (!pendingDeleteId) return
+    const user = users.find(u => u.id === pendingDeleteId)
+    setUsers(prev => prev.filter(u => u.id !== pendingDeleteId))
+    setPendingDeleteId(null)
+    toast(`${user?.name ?? 'User'} removed.`, 'info')
+  }, [pendingDeleteId, users, toast])
+
+  const handleDeleteCancel = useCallback(() => setPendingDeleteId(null), [])
 
   const activeCount = users.filter(u => u.status === 'Active').length
   const adminCount = users.filter(u => u.role === 'Admin').length
+  const pendingUser = users.find(u => u.id === pendingDeleteId)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -58,7 +76,7 @@ export default function App() {
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4 text-white" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197" />
               </svg>
@@ -73,7 +91,7 @@ export default function App() {
             className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg
               hover:bg-indigo-700 transition-colors shadow-sm shrink-0"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             <span className="hidden sm:inline">Add User</span>
@@ -84,7 +102,7 @@ export default function App() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-4 sm:space-y-6">
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-3 gap-3 sm:gap-4" role="region" aria-label="Summary statistics">
           {[
             {
               label: 'Total Users', value: users.length,
@@ -103,7 +121,7 @@ export default function App() {
             },
           ].map(stat => (
             <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-3 sm:p-4 flex items-center gap-2 sm:gap-4">
-              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 ${stat.color}`}>
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 ${stat.color}`} aria-hidden="true">
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={stat.icon} />
                 </svg>
@@ -117,27 +135,28 @@ export default function App() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-xl border border-gray-200 p-3 sm:p-4 flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
-          {/* Search — full width on mobile */}
+        <div className="bg-white rounded-xl border border-gray-200 p-3 sm:p-4 flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center"
+          role="search" aria-label="Filter users">
           <div className="relative flex-1 sm:min-w-52">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35m0 0A7 7 0 1010 17a7 7 0 006.65-4.35z" />
             </svg>
             <input
-              type="text"
+              type="search"
               placeholder="Search by name or email..."
               value={search}
               onChange={e => setSearch(e.target.value)}
+              aria-label="Search users"
               className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg outline-none
                 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition"
             />
           </div>
 
-          {/* Dropdowns — side by side on mobile */}
           <div className="flex gap-3">
             <select
               value={roleFilter}
               onChange={e => setRoleFilter(e.target.value as FilterRole)}
+              aria-label="Filter by role"
               className="flex-1 sm:flex-none px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none bg-white
                 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition text-gray-600"
             >
@@ -149,6 +168,7 @@ export default function App() {
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value as FilterStatus)}
+              aria-label="Filter by status"
               className="flex-1 sm:flex-none px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none bg-white
                 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition text-gray-600"
             >
@@ -158,20 +178,35 @@ export default function App() {
             </select>
           </div>
 
-          <span className="text-xs text-gray-400 sm:ml-auto">
+          <span className="text-xs text-gray-400 sm:ml-auto" aria-live="polite">
             {filtered.length} of {users.length} users
           </span>
         </div>
 
         {/* Table */}
-        <UserTable users={filtered} onEdit={openEdit} onDelete={handleDelete} />
+        <UserTable users={filtered} onEdit={openEdit} onDelete={handleDeleteRequest} />
       </main>
 
+      {/* Add / Edit modal */}
       {modalOpen && (
         <Modal title={editing ? 'Edit User' : 'Add New User'} onClose={closeModal}>
           <UserForm initial={editing ?? undefined} onSubmit={handleSubmit} onCancel={closeModal} />
         </Modal>
       )}
+
+      {/* Delete confirmation */}
+      {pendingDeleteId && pendingUser && (
+        <ConfirmDialog
+          title="Delete user?"
+          message={`"${pendingUser.name}" will be permanently removed. This action cannot be undone.`}
+          confirmLabel="Delete"
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+        />
+      )}
+
+      {/* Toast notifications */}
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }
